@@ -1,6 +1,6 @@
 ---
 title: "DSCI 5260 Group Project 6"
-author: "Srikanth, Nishant, Soumya, Manimala"
+author: "Sowmya"
 date: "11/14/2021"
 output:
   word_document: default
