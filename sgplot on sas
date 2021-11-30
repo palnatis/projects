@@ -1,0 +1,15 @@
+proc import datafile = "C:\Users\sp1233\Documents/forecast12.csv"
+dbms = csv replace
+out = work.forecast12;
+getnames = yes;
+run;
+
+proc sgplot data = forecast12;
+series x = year y = model_a;
+run;
+ proc sgplot data = forecast12;
+ series x= year y = model_b;
+ run;
+proc sgplot data = forecast12;
+series x = year y = model_c;
+run;
