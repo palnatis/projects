@@ -1,0 +1,401 @@
+---
+title: "DSCI 5260 Group Project 6"
+author: "Srikanth, Nishant, Soumya, Manimala"
+date: "11/18/2021"
+output:
+  pdf_document: default
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Loading Packages
+```{r loadpackages, message=TRUE, warning=TRUE}
+
+if(!require("pacman")) install.packages("pacman")
+pacman::p_load(data.table,ggplot2,plyr,dplyr,corrplot,pROC,caret,
+glmnet,xgboost,PRROC,caTools,rpart,hrbrthemes,scales,
+wesanderson,smotefamily,rpart.plot,ROSE,MASS,naivebayes,FNN)
+
+theme_set(theme_classic())
+options(digits = 3)
+set.seed(5738)
+```
+
+### Loading the dataset
+```{r}
+creditData <- read.csv('creditcard.csv')
+```
+
+### Exploring the dataset
+```{r}
+str(creditData)
+colSums(is.na(creditData))
+head(creditData)
+summary(creditData)
+
+table(creditData$Class)
+prop.table(table(creditData$Class))
+```
+
+### Exploratory Data Analysis
+### Distribution of Fraud Labels
+```{r}
+
+ggplot(data = creditData, 
+       mapping = aes(x = factor(Class),
+                     y= prop.table(stat(count)), 
+                     fill = factor(Class))) + 
+  geom_bar() + 
+  theme(plot.title=element_text(size=25, face="bold", hjust = 0.5)) +
+  theme_light() + 
+  ggtitle("Distribution of Fraud Labels (%)") + 
+  geom_bar(colour="black",position = "dodge") + 
+  scale_x_discrete(labels = c("No Fraud", "Fraud"))+ 
+  labs(x = 'Class', y = 'Percentage',fill="Class") + 
+  scale_y_continuous(labels = scales::percent) + 
+  scale_fill_brewer(palette = "PRGn") 
+```
+
+
+### Distribution of Class vs Amount
+```{r}
+ggplot(data = creditData,
+       aes(y=Amount,x=Class))+
+  geom_point(col="slateblue3",size=2) + 
+  facet_grid(~Class) + theme_light() + 
+  labs(title="Distribution of Class vs Amount")
+```
+
+
+### Relationship between Class and Time
+```{r}
+creditData$Hours <- round(creditData$Time/3600)
+
+
+ggplot(data = creditData,
+       aes(x=Time,fill=factor(Class)))+
+  geom_histogram(col='black',bins=48) +  
+  facet_grid(Class ~ ., scales = 'free_y') + 
+  theme_light() + 
+  labs(title="Relationship between Class and Time",fill="Class") + 
+  scale_fill_brewer(palette = "RdBu")
+```
+
+### Relationship between Class and Hour (24 Hour)
+```{r}
+creditData$Hours[creditData$Hours > 23] <- creditData$Hours[creditData$Hours > 23] -24
+
+ggplot(data = creditData,aes(x=Hours,fill=factor(Class)))+
+  geom_histogram(col='black') +  
+  facet_grid(Class ~ .,, scales = 'free_y') + 
+  theme_light() + 
+  labs(title="24 Hour Relationship between Class and Hour", fill="Class")
+
+```
+
+
+
+
+```{r}
+# Removing hours column
+creditData$Time <- creditData$Hours
+creditData <- subset(creditData,select=-Hours)
+```
+
+### Correlation plot of all the variables
+```{r}
+set.seed(5738)
+creditData$Class <- as.numeric(creditData$Class)
+corr <- cor(creditData[],method="pearson")
+
+library(RColorBrewer)
+corrplot(corr, number.cex = .9, method = "circle", 
+         type = "full", tl.cex=0.8,tl.col = "black")
+```
+
+
+### Data Preparation - Split the data
+```{r}
+set.seed(5738)
+creditDataSplit <- createDataPartition(creditData$Class, 
+                                       p = .70, list = FALSE, times = 1)
+
+creditData_train_Split <- creditData[ creditDataSplit,]
+creditData_test_Split  <- creditData[-creditDataSplit,]
+```
+
+
+### Dataset after split
+```{r}
+table(creditData_train_Split$Class)
+prop.table(table(creditData_train_Split$Class))
+
+table(creditData_test_Split$Class)
+prop.table(table(creditData_test_Split$Class))
+```
+
+
+### Classification Model on the Train Dataset
+```{r}
+multi.class.model <- rpart(Class ~ ., data = creditData_train_Split)
+rpart.plot(multi.class.model)
+```
+
+```{r}
+rpart.rules(multi.class.model, cover = TRUE)
+
+```
+
+### CART on Train Dataset
+```{r}
+set.seed(5738)
+default.ct <- rpart(Class ~ ., data = creditData_train_Split, method = "class")
+prp(default.ct, type = 1, extra = 1, under = TRUE, roundint = FALSE, 
+    split.font = 2, varlen = -10, box.palette = "BuOr")
+```
+
+### Confusion Matrix on the Train Dataset
+```{r}
+set.seed(5738)
+default.ct.point.pred.train <- predict(default.ct, 
+                                       data = creditData_train_Split, 
+                                       type = "class")
+confusionMatrix(default.ct.point.pred.train, 
+                as.factor(creditData_train_Split$Class))
+```
+
+### Predicting the values of Testdata using CART
+```{r}
+set.seed(5738)
+default.ct.point.pred.valid <- predict(default.ct, 
+                                       newdata = creditData_test_Split, 
+                                       type = "class")
+confusionMatrix(default.ct.point.pred.valid, 
+                as.factor(creditData_test_Split$Class))
+```
+
+### ROC Curve - CART Algorithm
+```{r}
+set.seed(5738)
+roc_dtr <- roc.curve(creditData_test_Split$Class, 
+                     default.ct.point.pred.valid,curve=TRUE)
+roc_dtr
+```
+### Precision-Recall Curve - CART Algorithm
+```{r}
+set.seed(5738)
+pr_dtr <- pr.curve(creditData_test_Split$Class, 
+                   default.ct.point.pred.valid,curve=TRUE)
+pr_dtr
+```
+
+### Plot - Precision-Recall Curve
+```{r}
+plot(pr_dtr)
+```
+
+### Logistic Regression
+```{r}
+set.seed(5738)
+logit.reg <- glm(Class ~ ., data = creditData_train_Split, family = "binomial") 
+
+options(scipen=999)
+summary(logit.reg)
+```
+
+```{r}
+exp(coef(logit.reg))
+```
+
+
+### Prediction on test Dataset - Logistic Regression
+```{r}
+set.seed(5738)
+logit.reg.pred <- predict(logit.reg, creditData_test_Split, type = "response")
+
+t(t(head(logit.reg.pred, 10)))
+```
+
+### Confusion Matrix - Logistic Regression
+```{r}
+set.seed(5738)
+logit.reg.pred.transformed <- as.numeric(logit.reg.pred > 0.5)
+
+confusionMatrix_logreg <- confusionMatrix(as.factor(logit.reg.pred.transformed) , as.factor(creditData_test_Split$Class))
+confusionMatrix_logreg
+```
+
+
+
+### ROC Curve - Logistic Regression
+```{r}
+set.seed(5738)
+roc_logit<- roc.curve(creditData_test_Split$Class, 
+                      logit.reg.pred, curve = TRUE)
+roc_logit
+```
+### Precision-Recall Curve - Logistic Regression
+```{r}
+set.seed(5738)
+pr_logit<- pr.curve(creditData_test_Split$Class, 
+                    logit.reg.pred, curve = TRUE)
+pr_logit
+```
+
+### Plot - Precision-Recall Curve
+```{r}
+plot(pr_logit)
+```
+
+### XGBoost Alogrithm
+```{r}
+set.seed(5738)
+labels <- creditData_train_Split$Class
+y <- recode(labels, 'Not_Fraud' = 0, "Fraud" = 1)
+```
+
+
+```{r}
+set.seed(5738)
+xgb <- xgboost(data = data.matrix(creditData_train_Split[,-31]), 
+ label = y,
+ eta = 0.1,
+ gamma = 0.1,
+ max_depth = 10, 
+ nrounds = 300, 
+ objective = "binary:logistic",
+ colsample_bytree = 0.6,
+ verbose = 0,
+ nthread = 7,
+ seed = 5738
+)
+```
+
+### ROC Curve - XGBoost Algorithm
+```{r}
+set.seed(5738)
+xgb_pred <- predict(xgb, data.matrix(creditData_test_Split[,-31]))
+roc.curve(creditData_test_Split$Class, xgb_pred, plotit = TRUE)
+```
+### Confusion Matrix - XGBoost
+```{r}
+set.seed(5738)
+xgb_pred_transformed <- as.numeric(xgb_pred > 0.5)
+#test_split_transformed <- levels(as.numeric(creditData_test_Split$Class)+1)
+
+confusionMatrix_XGB <- confusionMatrix(as.factor(xgb_pred_transformed) ,as.factor(creditData_test_Split$Class))
+confusionMatrix_XGB
+```
+
+
+
+### Precision-Recall Curve - XGBoost Algorithm
+```{r}
+set.seed(5738)
+pr_xgb <-pr.curve(creditData_test_Split$Class, 
+                  xgb_pred, curve = TRUE)
+pr_xgb
+```
+
+Plot - Precision-Recall Curve
+```{r}
+plot(pr_xgb)
+```
+
+
+```{r}
+set.seed(5738)
+creditData_train_Split$Class <- as.factor(creditData_train_Split$Class)
+```
+
+### Naive Bayes Classifier
+```{r}
+set.seed(5738)
+nb_model_1.1 <-naive_bayes(Class~.,
+                           data=creditData_train_Split)
+summary(nb_model_1.1)
+```
+
+### Prediciton on test data using Naive Bayes Algorithm
+```{r}
+set.seed(5738)
+p_nb <- predict(nb_model_1.1, newdata = creditData_test_Split)
+summary(p_nb)
+```
+
+
+### Confusion Matrix - Naive Bayes Classifier
+```{r}
+set.seed(5738)
+confusionMatrix <- confusionMatrix(table(p_nb ,
+                                         creditData_test_Split$Class))
+confusionMatrix
+```
+
+### ROC Curve - Naive Bayes Classifier
+```{r}
+set.seed(5738)
+roc.curve(creditData_test_Split$Class, p_nb, curve = TRUE)
+
+```
+### Precision-Recall Curve - Naive Bayes Classifier
+```{r}
+set.seed(5738)
+pr_nb <- pr.curve(creditData_test_Split$Class, 
+                  p_nb, curve = TRUE)
+pr_nb
+```
+
+
+### Plot - Precision-Recall Curve
+```{r}
+plot(pr_nb)
+```
+
+### KNN Algorithm
+```{r}
+set.seed(5738)
+nn <- knn(train = creditData_train_Split[,-31], test = creditData_test_Split[,-31], 
+          cl = creditData_train_Split$Class, k = 5,prob = TRUE)
+  # Nearest-neighbor Index (ratio of observed distance divided by the expected distance)
+#attributes(nn)$prob
+```
+
+
+### Confusion Matrix - KNN
+```{r}
+set.seed(5738)
+confusionMatrix_knn <- confusionMatrix(nn, 
+                                       as.factor(creditData_test_Split$Class))
+confusionMatrix_knn
+```
+
+
+
+### ROC CUrve - KNN Algorithm
+```{r}
+roc(creditData_test_Split$Class, attributes(nn)$prob)
+```
+
+```{r}
+plot(roc(creditData_test_Split$Class, attributes(nn)$prob),
+     print.thres = T,
+   print.auc=T)
+```
+### Precision-Recall Curve - KNN Algorithm
+```{r}
+set.seed(5738)
+pr_knn <- pr.curve(creditData_test_Split$Class, 
+                   attributes(nn)$prob,curve = TRUE)
+pr_knn
+```
+
+
+### Plot - Precision-Recall Curve
+```{r}
+plot(pr_knn)
+```
+
