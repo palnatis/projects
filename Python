@@ -14,3 +14,62 @@ def caught_speeding(speed, is_birthday):
     return(1 or 0)
   else:
     return(0)
+    
+  # Python Assessment
+  st = 'Create a list of the first letters of every word in this string'
+[x for x in range(100,201)if x%2==0]
+
+
+#list in python
+list_ = [1,2,3,4,5,67]
+for i in list_:
+    if i > 4:
+        print (i)
+
+st = 'Print only the words that start with the letter s'
+for word in st.split():
+    if word[0]=='s':
+        print(word)
+
+[num for num in range(1,11)if num%2==0]
+
+num_ =[2, 4, 6, 8, 10]
+print (num_)
+
+a = range(1,50)
+for i in a:
+    if i%2==0:
+        print(i)
+    
+
+#Other way to solve the above question
+[x for x in range(1,51)if x%2==0]
+
+st = 'Print only the words that start with the letter s'
+for word in st.split():
+    if len(word)%2 == 0:
+        print(word)
+
+# Write a program that prints the integers from 1 to 100. But for multiples of three print "Fizz" instead of the number, and for the multiples of five print "Buzz". For numbers which are multiples of both three and five print "FizzBuzz"
+for i in range(1,101):
+    if i%3 == 0 and i%5==0:
+        print('FizBuzz')
+    elif i%3 ==0:
+        print('Fizz')
+    elif i%5 ==0:
+        print('buzz')
+    else:
+        print(i)
+
+for i in range(1,101):
+    if i%3 == 0 and i%5==0:
+        print('FizBuzz')
+    elif i%3 ==0:
+        print('Fizz')
+    elif i%5 ==0:
+        print('buzz')
+    else:
+        print(i)
+
+mylist = [1,2,3,4]
+
