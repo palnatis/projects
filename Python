@@ -70,6 +70,52 @@ for i in range(1,101):
         print('buzz')
     else:
         print(i)
+#Inheritence and polymorphism
 
-mylist = [1,2,3,4]
-
+#Inheritence - a method of defining new classes from the existing classes
+class Animal():
+    def __init__(self):
+        print("ANIMAL CREATED")
+    def who_am_i(self):
+        print("Iam an Anmial")
+    def eat(self):
+        print("I am eating")
+#This is the class inhereiated from the animal class
+class Dog(Animal):
+    def __init__(self):
+        Animal.__init__(self)
+        print("Dog Created")
+        #The below method is replacing  the main class in the above cell
+    def who_am_i(self):
+        
+        print("I a Human")
+ #Polymorphism -- refers to different object classes share same name
+class Dog():
+    def __init__(self,name):
+        self.name = name
+    def speak(self):
+        #IF we see here the speak method is in both of the classes but they perform different in two different instances
+        return self.name + "says BOW!"
+print(neo.speak())        
+neo = Dog("neo")
+leo = Cat("leo")
+print(neo.speak())
+for pet in [neo,leo]:
+    print(type(pet))
+    print(pet.speak())
+def pet_speak(pet):
+    print(pet.speak())
+class Animal():
+    def __init__(self, name):
+        self.name = name
+    def speak(self):
+        raise NotImplementedError("Subclass must implemented this abstract method")
+class Dog(Animal):
+    def speak(self):
+        return self.name + " "+ "syas meow" 
+class Cat(Animal):
+    def speak(self):
+        return self.name + " "+ "says BOW" 
+leo = Dog("leo")
+neo = Cat("neo")
+neo.speak()
