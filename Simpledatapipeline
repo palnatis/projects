@@ -1,0 +1,17 @@
+import pyspark
+#Create pyspark session
+spark = pyspark.sql.SparkSession \
+.builder \
+.appName("Python Spark SQL Datapipline example") \
+.config('spark.driver.extraClassPath',"Users/chand/Downloads/postgresql-42.3.2.jar") \
+.getOrCreate()
+#Read tables from db using jdbc
+ consultant_df = spark.read \
+.format("jdbc") \
+.option("url","jdbc:postgresql://localhost:5432/ETL_Datapipelines") \
+.option("dbtable","consultant_df") \
+.option("user","<username>") \
+.option("password","<1006>") \
+.option("driver","org.postgresql.Driver") \
+.load()
+Print(consultant_df.show())
