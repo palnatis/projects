@@ -1,0 +1,13 @@
+>>> import pyspark
+>>> saprk = pyspark.sql.SparkSession \
+... .builder \
+... .config('spark.driver.extraClassPath',"/Users/chand/Downloads/postgresql-42.3.3.jar") \
+... .getOrCreate()
+>>> consultant_df = spark.read \
+... .format("jdbc") \
+... .option("url","jdbc:postgresql://localhost:5432/ETL_Datapipeline") \
+... .option("dbtable","client_info") \
+... .option("user","<username>") \
+... .option("password","<password>") \
+... .option("driver","org.postgresql.Driver") \
+... .load()
