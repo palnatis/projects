@@ -1,0 +1,110 @@
+1 AWSGlueImmersion-ETL
+2 Create IAM USer
+3 DeployCloudFormation
+4 Prepare S3 Bucket and Clonefiles
+# Prepare S3 Bucket
+AWS_ACCOUNT_ID=`aws sts get-caller-identity --query Account --output text`
+AWS_REGION=`aws configure get region`
+dataengineerproect=glueworkshop-${AWS_ACCOUNT_ID}-${AWS_REGION}
+echo "export dataengineerproect=\"${dataengineerproect}\"" >> /home/ec2-user/.bashrc
+echo "export AWS_REGION=\"${AWS_REGION}\"" >> /home/ec2-user/.bashrc
+echo "export AWS_ACCOUNT_ID=\"${AWS_ACCOUNT_ID}\"" >> /home/ec2-user/.bashrc
+echo ${dataengineerproect}
+echo ${AWS_REGION}
+echo ${AWS_ACCOUNT_ID}
+
+cd ~/environment
+aws s3 cp s3://ee-assets-prod-us-east-1/modules/aa287fde7dd448ffac85ed7824e5c1f0/v7/download/firstcloud9.zip firstcloud9.zip
+unzip firstcloud9.zip
+mkdir ~/environment/firstcloud9/library
+mkdir ~/environment/firstcloud9/output
+git clone https://github.com/jefftune/pycountry-convert.git
+cd ~/environment/pycountry-convert
+zip -r pycountry_convert.zip pycountry_convert/
+mv ~/environment/pycountry-convert/pycountry_convert.zip ~/environment/firstcloud9/library/
+cd ~/environment/glue-workshop
+ s3://${dataengineerproect}/script/
+aws s3 cp --recursive ~/environment/glue-workshop/data/ s3://${dataengineerproect}/input/
+aws s3 cp --recursive ~/environment/glue-workshop/library/ s3://dataengineerproect/c9c3d9c463f94e0a669f092b35273668/d36f1d52b7c8d06790db13cdd9340899/library/
+aws s3 cp --recursive s3://covid19-lake/rearc-covid-19-testing-data/json/states_daily/ s3://${dataengineerproect}/input/lab5/json/
+
+5 Working with Gluecatalog
+Using CLI
+head ~/environment/glue-workshop/data/lab1/csv/sample.csv
+# Create database
+aws glue create-database --database-input "{\"Name\":\"cli-glueworkshop\", \"Description\":\"This database is created using AWS CLI\"}"
+# Create Crawlers
+aws glue create-crawler \
+--name cli-lab1 \
+--role AWSGlueServiceRole-glueworkshop \
+--database-name cli-glueworkshop \
+--table-prefix cli- \
+--targets "{\"S3Targets\" : [{\"Path\": \"s3://dataengineerproect/c9c3d9c463f94e0a669f092b35273668/input/lab1/csv\"}, \
+                            {\"Path\": \"s3://dataengineerproect/c9c3d9c463f94e0a669f092b35273668/input/lab5/json\"} ]}"
+
+# To start crawlers
+aws glue start-crawler --name cli-lab1
+
+Using Python Boto3
+aws glue start-crawler --name lab1-without-partition-index
+
+aws glue start-crawler --name lab1-with-partition-index
+
+aws glue create-partition-index \
+--database-name partition_index_glueworkshop \
+--table-name lab1_with_index_syncstreamingdata \
+--partition-index Keys=customer,visityearmonth,IndexName=idxbycustvym
+
+
+
+head ~/environment/glue-workshop/data/lab1/csv/sample.csv
+sudo pip3 install boto3
+
+import boto3
+
+dataengineerproect = "${dataengineerproect}"
+client = boto3.client('glue')
+
+# Create database 
+try:
+    response = client.create_database(
+        DatabaseInput={
+            'Name': 'python-glueworkshop',
+            'Description': 'This database is created using Python boto3',
+        }
+    )
+    print("Successfully created database")
+except:
+    print("error in creating database")
+
+# Create Glue Crawler 
+try:
+    response = client.create_crawler(
+        Name='python-lab1',
+        Role='AWSGlueServiceRole-glueworkshop',
+        DatabaseName='python-glueworkshop',
+        Targets={
+            'S3Targets': [
+                {
+                    'Path': 's3://{dataengineerproect}/input/lab1/csv'.format(dataengineerproect = dataengineerproect),
+                },
+                {
+                    'Path': 's3://{dataengineerproect}/input/lab5/json'.format(dataengineerproect = dataengineerproect),
+                }
+            ]
+        },
+        TablePrefix='python-'
+    )
+    print("Successfully created crawler")
+except:
+    print("error in creating crawler")
+# This is the command to start the Crawler
+try:
+    response = client.start_crawler(
+        Name='python-lab1'
+    )
+    print("Successfully started crawler")
+except:
+    print("error in starting crawler")
+# Once you have pasted all the content to glue_crawler.py we need to execute the python script. To execute the script run the following command inside the Cloud9 terminal.
+python ~/environment/glue-workshop/code/lab1/glue_crawler.py
