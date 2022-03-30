@@ -119,3 +119,16 @@ class Cat(Animal):
 leo = Dog("leo")
 neo = Cat("neo")
 neo.speak()
+
+#Formating the phone mumbers
+import re
+
+def format_tel(tel):
+    tel = tel.removeprefix("+")
+    tel = tel.removeprefix("1")     # remove leading +1 or 1
+    tel = re.sub("[ ()-]", '', tel) # remove space, (), -
+
+    assert(len(tel) == 10)
+    tel = f"{tel[:3]}-{tel[3:6]}-{tel[6:]}"
+
+    return tel
