@@ -1,0 +1,14 @@
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+import smtplib
+import os
+smtp = smtplib.SMTP('smtp.gmail.com',587)
+smtp.ehlo()
+smtp.starttls()
+smtp.login('email@gmail.com','akldjfaadgcka')
+msg = MIMEMultipart()
+msg['Subject'] = 'Hi'
+msg.attach(MIMEText("I'm Interested"))
+to =["chandureddyaare@gmail.com"]
+smtp.sendmail(from_addr= "palnatisowmya@gmail.com",
+             to_addrs = to, msg= msg.as_string())
