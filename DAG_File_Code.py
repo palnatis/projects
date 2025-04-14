@@ -1,6 +1,3 @@
-
-"""Example DAG demonstrating the usage of the BashOperator."""
-
 from datetime import datetime, timedelta
 
 from airflow import DAG
